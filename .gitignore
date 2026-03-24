@@ -42,9 +42,7 @@ models/*.pt
 videos/*.mp4
 videos/*.avi
 !videos/.gitkeep
-assets/*.png
-assets/*.jpg
-!assets/.gitkeep
+
 
 # OS
 .DS_Store
