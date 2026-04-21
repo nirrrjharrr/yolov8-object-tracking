@@ -129,54 +129,27 @@ Demo video: [Google Drive](https://drive.google.com/drive/folders/1xxTx5bGFYYdHP
 
 These are genuine constraints of the current design, not implementation bugs.
 
-**1. Misclassification of visually similar objects.**
-The model frequently confuses objects that share shape or aspect ratio in the COCO training distribution — a pen detected as a toothbrush, a remote as a phone, a bag as a backpack. This reflects what the pretrained weights have learned to discriminate, not a failure of the inference code. No fine-tuning has been applied to correct these errors for specific environments.
+**1. Dependence on COCO classes limits real-world utility.**
+The model detects only the 80 COCO object categories. Anything outside that set — custom products, lab equipment, domain-specific tools — will be missed or forced into the nearest COCO class with low confidence.
 
-**2. Dependence on COCO classes limits real-world utility.**
-The model detects exactly the 80 COCO object categories. Any object outside this set — custom products, lab equipment, domain-specific tools — will either be missed entirely or mapped to the nearest COCO class with low confidence. The system has no mechanism for handling out-of-distribution inputs gracefully.
+**2. Sensitivity to lighting and motion quality.**
+Detection quality degrades under low light, strong backlighting, rapid illumination changes, and motion blur. No preprocessing such as histogram equalization or exposure normalization is applied before inference.
 
-**3. Sensitivity to lighting conditions.**
-Detection quality degrades noticeably under low ambient light, strong backlighting, or rapidly changing illumination. No preprocessing (histogram equalization, gamma correction, or exposure normalization) is applied to the input frames.
-
-**4. Difficulty with small and partially occluded objects.**
-YOLOv8n is designed for inference speed rather than small-object accuracy. Objects occupying fewer than roughly 32×32 pixels in the frame, or partially hidden behind other objects, are frequently missed or detected with unstable bounding boxes.
-
-**5. Frame-by-frame tracking with limited temporal consistency.**
-The tracker assigns IDs across frames, but identities can still flicker — an object confidently tracked in one frame may lose its ID in the next due to minor changes in pose, lighting, partial occlusion, or motion blur. This can affect downstream tasks that require fully stable, persistent object identities (counting, trajectory analysis, event detection).
-
-**6. Motion blur degrades inference.**
-Fast-moving objects in a live webcam feed produce blurred frames at typical 30fps capture rates. YOLOv8 has no motion deblurring stage, and blurred objects frequently fall below the confidence threshold or are misclassified.
-
-**7. Background clutter increases false positives.**
-In visually complex scenes, the model tends to produce spurious detections in textured backgrounds or partial occlusions. Lowering the confidence threshold to improve recall on real objects proportionally increases false positive rate from background clutter. This trade-off has no satisfactory resolution without domain-specific training.
-
-**8. No domain-specific adaptation.**
-The weights are the default pretrained Ultralytics release with no fine-tuning. Performance on real environments — cluttered desks, specific indoor rooms, outdoor settings — will differ from COCO benchmark numbers and depends on how closely the target scene matches the COCO distribution.
+**3. Tracking is not perfectly stable.**
+The tracker assigns IDs across frames, but identities can still flicker under occlusion, abrupt motion, or small appearance changes. That makes long-term counting or trajectory analysis less reliable than in a dedicated tracking pipeline.
 
 ---
 
 ## Possible Improvements
 
-**Adding object tracking for temporal consistency.**
-Integrating a tracker such as ByteTrack or SORT would assign persistent IDs across frames, eliminate detection flickering, and enable downstream analysis like counting or trajectory reconstruction. YOLOv8's `track()` API supports this with minimal code changes.
-
 **Fine-tuning on a domain-specific dataset.**
-Training or fine-tuning on images from the target environment is the most impactful improvement available. Even a modest labeled dataset (500–1000 images) can substantially reduce misclassification and improve recall for classes relevant to the specific deployment context.
-
-**Confidence smoothing to reduce flickering.**
-A temporal filter — for example, only accepting a detection after it appears in N consecutive frames, or applying an exponential moving average on per-class confidence scores — would stabilize output without requiring a full tracker.
-
-**Higher input resolution or model scaling for small objects.**
-Running inference at a larger image size (e.g., `imgsz=1280` instead of the default 640) improves detection of small objects at the cost of increased latency. Switching from YOLOv8n to YOLOv8s or YOLOv8m provides a better accuracy/speed balance if hardware allows.
+Training or fine-tuning on images from the target environment is the most impactful improvement available. Even a modest labeled dataset can substantially reduce misclassification and improve recall for classes relevant to the deployment context.
 
 **Preprocessing for low-light conditions.**
 Applying adaptive histogram equalization (CLAHE) or a learned low-light enhancement model before passing frames to the detector can recover detection quality in poorly lit environments without retraining the detector itself.
 
-**Edge deployment optimization.**
-For deployment on resource-constrained hardware (e.g., Raspberry Pi, NVIDIA Jetson), the model can be exported to ONNX or TensorRT and quantized to INT8. This typically yields 3–5× inference speedup with marginal accuracy loss on general detection tasks.
-
-**Replacing COCO classes with domain-specific categories.**
-For applications where COCO classes are not representative of the target objects, retraining on a custom dataset using Ultralytics' training pipeline — with only the relevant classes — is the appropriate path. This also reduces confusion caused by forcing real-world objects into ill-fitting COCO categories.
+**Higher input resolution or model scaling for small objects.**
+Running inference at a larger image size, or switching from YOLOv8n to YOLOv8s/YOLOv8m, improves detection of small objects at the cost of increased latency.
 
 ---
 
