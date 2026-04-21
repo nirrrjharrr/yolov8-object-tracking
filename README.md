@@ -1,26 +1,50 @@
-# YOLOv8 Real-Time Object Detection and Tracking System
+# YOLOv8 Object Detection and Tracking System
 
-A Python-based object detection and tracking system using YOLOv8 (nano model) for real-time detection from both video files and webcam streams.
+A Python-based object detection and tracking system using YOLOv8 (nano model) for inference on both pre-recorded video files and live webcam streams. The system draws bounding boxes with class labels, confidence scores, and persistent track IDs in real time, using only the pretrained COCO weights without any domain-specific adaptation.
 
-## Features
+---
 
-- **Video Detection**: Process video files with object detection and tracking
-- **Webcam Detection**: Real-time detection from webcam input
-- **Configurable Thresholds**: Adjust confidence thresholds for detection
-- **GPU Support**: Optional CUDA acceleration for faster processing
-- **Multi-object Tracking**: Tracks detected objects across frames with unique IDs
+## What It Does
 
-## 📸 Results
+The system runs YOLOv8 in tracking mode on either a video file or a webcam feed, filters detections by a configurable confidence threshold, and renders annotated output to a display window. Track IDs are assigned across frames with Ultralytics' `track(..., persist=True)` API, so object identities can persist when the model maintains a stable association.
 
-### 🚶 People Tracking
-![People Tracking](assets/people_tracking.jpg)
+It is designed as a general-purpose detection baseline: useful for prototyping, demonstrations, and understanding model behavior on real-world input, but not intended as a production-ready perception system without further adaptation.
 
-### 🚗 Traffic Tracking
-![Traffic Tracking](assets/traffic_tracking.jpg)
+---
 
-## 🎥 Demo Video
+## Key Features
 
-Watch the demo here: [Google Drive Link](https://drive.google.com/drive/folders/1xxTx5bGFYYdHPKiUTj99Q332twr5djuQ?usp=sharing)
+- **Video file processing** with frame-by-frame YOLOv8 tracking
+- **Live webcam tracking** from any OpenCV-accessible camera index
+- **Configurable confidence threshold** to balance recall and precision
+- **Optional CUDA acceleration** via PyTorch for faster inference
+- **Persistent track IDs** for more stable labels across consecutive frames
+- **80-class COCO detection** — no custom training required to run out of the box
+
+---
+
+## How It Works
+
+```
+Input (Video File or Webcam Frame)
+    │
+    ▼
+YOLOv8n Inference
+    │   (single forward pass per frame; no temporal context)
+    │
+    ▼
+Confidence Filtering (CONF_THRESHOLD)
+    │
+    ▼
+Bounding Box + Label Rendering (OpenCV)
+    │
+    ▼
+Display Window
+```
+
+Each frame is processed sequentially. The tracker tries to preserve identities between frames, but track continuity can still break under occlusion, blur, or abrupt motion.
+
+---
 
 ## Project Structure
 
@@ -30,139 +54,173 @@ YOLOv8-Object-Detection-System/
 │   ├── video_detection.py      # Video file processing
 │   └── webcam_detection.py     # Webcam real-time detection
 ├── models/
-│   └── .gitkeep                # YOLOv8 Nano model (auto-downloads if missing)
+│   └── .gitkeep                # YOLOv8n model (auto-downloads on first run)
 ├── assets/
-│   ├── people_tracking.jpg     # People tracking demo
-│   └── traffic_tracking.jpg    # Traffic tracking demo
-├── requirements.txt            # Python dependencies
-├── README.md                   # This file
-└── .gitignore                 # Git ignore rules
+│   ├── people_tracking.jpg
+│   └── traffic_tracking.jpg
+├── requirements.txt
+├── README.md
+└── .gitignore
 ```
 
-## Installation
+---
 
-1. **Clone or download this repository**
+## Setup and Usage
 
-2. **Install Python dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Prerequisites
 
-   The YOLOv8 model will automatically download on first run if not present in the `models/` directory.
+```bash
+pip install -r requirements.txt
+```
 
-## Usage
+YOLOv8n weights (`yolov8n.pt`) download automatically on first run if not present in `models/`.
 
 ### Video Detection
-
-Process a video file with object detection:
 
 ```bash
 python src/video_detection.py
 ```
 
-**Configuration** (edit `src/video_detection.py`):
-- `VIDEO_PATH`: Path to video file (default: `videos/people_walking.mp4`)
-- `MODEL_PATH`: Path to YOLO model (default: `models/yolov8n.pt`)
-- `CONF_THRESHOLD`: Detection confidence threshold (default: 0.3)
+Configuration (edit directly in `video_detection.py`):
 
-**Controls**:
-- `ESC`: Exit the application
-- Click window close button: Exit the application
+| Parameter | Default | Description |
+|---|---|---|
+| `VIDEO_PATH` | `videos/people_walking.mp4` | Path to input video |
+| `MODEL_PATH` | `models/yolov8n.pt` | YOLOv8 weights |
+| `CONF_THRESHOLD` | `0.3` | Minimum detection confidence |
 
 ### Webcam Detection
-
-Real-time detection from your webcam:
 
 ```bash
 python src/webcam_detection.py
 ```
 
-**Configuration** (edit `src/webcam_detection.py`):
-- `CAMERA_INDEX`: Webcam index (0 for default camera)
-- `MODEL_PATH`: Path to YOLO model (default: `models/yolov8n.pt`)
-- `CONF_THRESHOLD`: Detection confidence threshold (default: 0.3)
+| Parameter | Default | Description |
+|---|---|---|
+| `CAMERA_INDEX` | `0` | Webcam index (try 1 or 2 for additional cameras) |
+| `MODEL_PATH` | `models/yolov8n.pt` | YOLOv8 weights |
+| `CONF_THRESHOLD` | `0.3` | Minimum detection confidence |
 
-**Controls**:
-- `ESC`: Exit the application
-- Click window close button: Exit the application
+**Controls:** `ESC` or window close button to exit.
 
-## GPU Acceleration
-
-To use CUDA for faster processing, uncomment the GPU line in either script:
+### GPU Acceleration
 
 ```python
-model = YOLO(MODEL_PATH).to("cuda")  # ← uncomment for GPU
+model = YOLO(MODEL_PATH).to("cuda")  # uncomment in either script
 ```
 
-**Requirements**:
-- CUDA-capable GPU
-- NVIDIA drivers installed
-- PyTorch with CUDA support
+Requires a CUDA-capable GPU, NVIDIA drivers, and a PyTorch build with CUDA support.
 
-## Configuration Options
+---
 
-### Confidence Threshold (`CONF_THRESHOLD`)
-- Range: 0.0 - 1.0
-- Lower values detect more objects but may include false positives
-- Higher values are more selective (default: 0.3)
+## Example Output
 
-### Colors
-- `BOX_COLOR`: Bounding box color (BGR format)
-- `TEXT_COLOR`: Label text color (BGR format)
+### People Detection
+![People Detection](assets/people_tracking.jpg)
 
-### Font Settings
-- `FONT_SCALE`: Text size
-- `THICKNESS`: Box and text line thickness
+### Traffic Detection
+![Traffic Detection](assets/traffic_tracking.jpg)
+
+Demo video: [Google Drive](https://drive.google.com/drive/folders/1xxTx5bGFYYdHPKiUTj99Q332twr5djuQ?usp=sharing)
+
+---
+
+## Limitations
+
+These are genuine constraints of the current design, not implementation bugs.
+
+**1. Misclassification of visually similar objects.**
+The model frequently confuses objects that share shape or aspect ratio in the COCO training distribution — a pen detected as a toothbrush, a remote as a phone, a bag as a backpack. This reflects what the pretrained weights have learned to discriminate, not a failure of the inference code. No fine-tuning has been applied to correct these errors for specific environments.
+
+**2. Dependence on COCO classes limits real-world utility.**
+The model detects exactly the 80 COCO object categories. Any object outside this set — custom products, lab equipment, domain-specific tools — will either be missed entirely or mapped to the nearest COCO class with low confidence. The system has no mechanism for handling out-of-distribution inputs gracefully.
+
+**3. Sensitivity to lighting conditions.**
+Detection quality degrades noticeably under low ambient light, strong backlighting, or rapidly changing illumination. No preprocessing (histogram equalization, gamma correction, or exposure normalization) is applied to the input frames.
+
+**4. Difficulty with small and partially occluded objects.**
+YOLOv8n is designed for inference speed rather than small-object accuracy. Objects occupying fewer than roughly 32×32 pixels in the frame, or partially hidden behind other objects, are frequently missed or detected with unstable bounding boxes.
+
+**5. Frame-by-frame tracking with limited temporal consistency.**
+The tracker assigns IDs across frames, but identities can still flicker — an object confidently tracked in one frame may lose its ID in the next due to minor changes in pose, lighting, partial occlusion, or motion blur. This can affect downstream tasks that require fully stable, persistent object identities (counting, trajectory analysis, event detection).
+
+**6. Motion blur degrades inference.**
+Fast-moving objects in a live webcam feed produce blurred frames at typical 30fps capture rates. YOLOv8 has no motion deblurring stage, and blurred objects frequently fall below the confidence threshold or are misclassified.
+
+**7. Background clutter increases false positives.**
+In visually complex scenes, the model tends to produce spurious detections in textured backgrounds or partial occlusions. Lowering the confidence threshold to improve recall on real objects proportionally increases false positive rate from background clutter. This trade-off has no satisfactory resolution without domain-specific training.
+
+**8. No domain-specific adaptation.**
+The weights are the default pretrained Ultralytics release with no fine-tuning. Performance on real environments — cluttered desks, specific indoor rooms, outdoor settings — will differ from COCO benchmark numbers and depends on how closely the target scene matches the COCO distribution.
+
+---
+
+## Possible Improvements
+
+**Adding object tracking for temporal consistency.**
+Integrating a tracker such as ByteTrack or SORT would assign persistent IDs across frames, eliminate detection flickering, and enable downstream analysis like counting or trajectory reconstruction. YOLOv8's `track()` API supports this with minimal code changes.
+
+**Fine-tuning on a domain-specific dataset.**
+Training or fine-tuning on images from the target environment is the most impactful improvement available. Even a modest labeled dataset (500–1000 images) can substantially reduce misclassification and improve recall for classes relevant to the specific deployment context.
+
+**Confidence smoothing to reduce flickering.**
+A temporal filter — for example, only accepting a detection after it appears in N consecutive frames, or applying an exponential moving average on per-class confidence scores — would stabilize output without requiring a full tracker.
+
+**Higher input resolution or model scaling for small objects.**
+Running inference at a larger image size (e.g., `imgsz=1280` instead of the default 640) improves detection of small objects at the cost of increased latency. Switching from YOLOv8n to YOLOv8s or YOLOv8m provides a better accuracy/speed balance if hardware allows.
+
+**Preprocessing for low-light conditions.**
+Applying adaptive histogram equalization (CLAHE) or a learned low-light enhancement model before passing frames to the detector can recover detection quality in poorly lit environments without retraining the detector itself.
+
+**Edge deployment optimization.**
+For deployment on resource-constrained hardware (e.g., Raspberry Pi, NVIDIA Jetson), the model can be exported to ONNX or TensorRT and quantized to INT8. This typically yields 3–5× inference speedup with marginal accuracy loss on general detection tasks.
+
+**Replacing COCO classes with domain-specific categories.**
+For applications where COCO classes are not representative of the target objects, retraining on a custom dataset using Ultralytics' training pipeline — with only the relevant classes — is the appropriate path. This also reduces confusion caused by forcing real-world objects into ill-fitting COCO categories.
+
+---
 
 ## Model Information
 
-- **Model**: YOLOv8 Nano (yolov8n)
-- **Size**: ~6.2 MB
-- **Speed**: Fast inference on CPU and GPU
-- **Accuracy**: Good balance between speed and accuracy
-- **Classes**: Detects 80 different object classes (COCO dataset)
+| Property | Value |
+|---|---|
+| Model | YOLOv8 Nano (`yolov8n.pt`) |
+| Weights size | ~6.2 MB |
+| Training data | COCO 2017 |
+| Detection classes | 80 |
+| Input resolution | 640×640 (default) |
+| Inference target | CPU or CUDA GPU |
 
-## Troubleshooting
-
-### "Failed to grab frame" Error
-- Check that the video file exists at the specified path
-- Ensure the video file is not corrupted
-- Try with a different video file
-
-### "Could not open webcam" Error
-- Ensure your webcam is connected and not used by another application
-- Try changing `CAMERA_INDEX` to 1 or 2 if you have multiple cameras
-- Check camera permissions
-
-### Low FPS / Slow Performance
-- Lower the video resolution
-- Increase `CONF_THRESHOLD` to reduce processing overhead
-- Enable GPU acceleration if available
-- Use a less demanding model (larger models are slower)
+---
 
 ## Requirements
 
 - Python 3.8+
-- OpenCV (`opencv-python`)
-- Ultralytics YOLOv8
-- PyTorch
-- NumPy
+- `ultralytics`
+- `opencv-python`
+- `torch`
+- `numpy`
 
-See `requirements.txt` for specific versions.
+See `requirements.txt` for pinned versions.
+
+---
+
+## Troubleshooting
+
+**"Failed to grab frame"** — verify the video file path and that the file is not corrupted.
+
+**"Could not open webcam"** — check that the camera is not in use by another process, and try `CAMERA_INDEX = 1` or `2` if multiple cameras are connected.
+
+**Low FPS** — reduce input resolution, increase `CONF_THRESHOLD` to skip marginal detections faster, or enable CUDA acceleration.
+
+---
 
 ## License
 
-This project uses YOLOv8 which is licensed under AGPL-3.0. Ensure you comply with the license when using it for your projects.
+YOLOv8 is licensed under AGPL-3.0 (Ultralytics). Ensure compliance when deploying or distributing.
 
 ## Resources
 
-- [YOLOv8 Documentation](https://docs.ultralytics.com/)
+- [Ultralytics YOLOv8 Documentation](https://docs.ultralytics.com/)
 - [OpenCV Documentation](https://opencv.org/)
 - [PyTorch Documentation](https://pytorch.org/docs/)
-
-## Notes
-
-- The model auto-downloads on first run if not present in the `models/` directory
-- GPU acceleration is optional; CPU inference is supported
-- Tracking works best with consistent frame rate and good lighting
-- For better results on custom objects, consider fine-tuning with your own dataset
