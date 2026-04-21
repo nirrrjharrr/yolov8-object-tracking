@@ -12,6 +12,11 @@ It is designed as a general-purpose detection baseline: useful for prototyping, 
 
 ---
 
+### People Tracking Preview
+![People Detection](assets/people_tracking.jpg)
+
+---
+
 ## Key Features
 
 - **Video file processing** with frame-by-frame YOLOv8 tracking
@@ -57,7 +62,7 @@ YOLOv8-Object-Detection-System/
 │   └── .gitkeep                # YOLOv8n model (auto-downloads on first run)
 ├── assets/
 │   ├── people_tracking.jpg
-│   └── traffic_tracking.jpg
+│   └── ...
 ├── requirements.txt
 ├── README.md
 └── .gitignore
@@ -114,12 +119,6 @@ Requires a CUDA-capable GPU, NVIDIA drivers, and a PyTorch build with CUDA suppo
 ---
 
 ## Example Output
-
-### People Detection
-![People Detection](assets/people_tracking.jpg)
-
-### Traffic Detection
-![Traffic Detection](assets/traffic_tracking.jpg)
 
 Demo video: [Google Drive](https://drive.google.com/drive/folders/1xxTx5bGFYYdHPKiUTj99Q332twr5djuQ?usp=sharing)
 
